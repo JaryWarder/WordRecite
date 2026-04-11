@@ -1,0 +1,89 @@
+# =========================
+# 编译与构建产物（Java / Maven）
+# =========================
+**/target/
+**/out/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/*.nar
+**/*.zip
+**/*.tar.gz
+**/*.tgz
+**/*.jmod
+**/dependency-reduced-pom.xml
+**/.mvn/wrapper/maven-wrapper.jar
+
+# =========================
+# 运行时动态文件 / 临时文件
+# =========================
+**/*.log
+**/logs/
+**/*.pid
+**/*.pid.lock
+**/*.tmp
+**/*.temp
+**/tmp/
+**/temp/
+**/*.swp
+**/*.swo
+**/*~
+
+# 本地数据库/缓存（如果运行时生成）
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.h2.db
+**/*.mv.db
+**/*.trace.db
+
+# 安全/密钥等运行时生成文件
+**/RSAKey.txt
+
+# =========================
+# 环境与依赖缓存（Node / Python）
+# =========================
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.cache/
+**/.parcel-cache/
+**/.vite/
+**/coverage/
+**/.nyc_output/
+**/*.local
+
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+# 本地环境变量文件（不要提交包含账号/密钥的配置）
+api.txt
+.env
+.env.*
+
+# =========================
+# IDE 与系统级缓存
+# =========================
+**/.idea/
+**/*.iml
+**/*.ipr
+**/*.iws
+**/.classpath
+**/.project
+**/.settings/
+**/.factorypath
+
+**/.vscode/
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# 本仓库工具/工作区私有文件
+# =========================
+.trae/

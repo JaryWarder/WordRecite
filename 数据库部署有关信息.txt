@@ -1,0 +1,39 @@
+环境要求维度
+
+Ubuntu 准确版本
+jarywarder@jarywarder-VMware-Virtual-Platform:~$ lsb_release -a
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 25.04
+Release:	25.04
+Codename:	plucky
+
+MySQL 版本和编码
+jarywarder@jarywarder-VMware-Virtual-Platform:~$ mysql --version
+mysql  Ver 8.4.7-0ubuntu0.25.04.1 for Linux on x86_64 ((Ubuntu))
+
+mysql> SHOW VARIABLES LIKE 'character_set_server';
++----------------------+---------+
+| Variable_name        | Value   |
++----------------------+---------+
+| character_set_server | utf8mb4 |
++----------------------+---------+
+1 row in set (0.02 sec)
+
+Redis 版本
+jarywarder@jarywarder-VMware-Virtual-Platform:~$ redis-server --version
+Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=a6fac667c4193620
+
+数据导入维度
+1.首先创建好SQL文件分别是
+compete_init.sql  //初始化数据库及部分表格
+private_new.sql //生词本
+WordBooks.sql //单词书
+CET6_new.sql //六级单词
+GRE_new.sql  //研究生入学考试
+TOEFL_new.sql//托福
+
+2.直接在MySQL用source按顺序导入上述SQL文件即可
+
+项目连接配置维度
+查看我的pom.xml文件

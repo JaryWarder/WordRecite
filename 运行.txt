@@ -1,0 +1,73 @@
+### **WordRecite 项目启动操作指南**
+
+#### **第一阶段：启动基础设施 (Ubuntu 虚拟机)**
+
+这是最关键的一步，必须最先完成。
+
+1.  **打开虚拟机**：
+      * 启动 VMware/VirtualBox，开启 Ubuntu 虚拟机。
+2.  **获取 IP 地址**（**重要**）：
+      * 打开 Ubuntu 终端，输入：`ip addr`
+      * **检查**：确认 IP 地址是否还是之前的 `192.168.33.128`。
+      * *注意：如果 IP 变了（比如变成了 .129），您必须去后端代码里修改配置文件，否则连不上。*
+3.  **确认 MySQL 状态**：
+      * 输入：`sudo systemctl status mysql`
+      * 看到绿色的 `active (running)` 即表示数据库已就绪。
+      * *(可选验证)*：在 Ubuntu 终端输入 `sudo netstat -plnt | grep 3306` 确认显示的是 `0.0.0.0:3306`。
+
+-----
+
+#### **第二阶段：启动后端 (Windows - IntelliJ IDEA)**
+
+1.  **打开项目**：
+      * 启动 IntelliJ IDEA，打开您的 Java 后端项目。
+2.  **检查配置 (仅当 IP 变动时)**：
+      * 如果刚才查到的 Ubuntu IP 变了，打开 `src/main/resources/applicationContext.xml`。
+      * 更新 `jdbc:mysql://<新IP>:3306/...` 中的 IP 地址。
+3.  **启动 Tomcat**：
+      * 点击 IDEA 顶部工具栏的绿色 **Run** 按钮 (运行 Tomcat/Demo)。
+      * **观察日志**：等待控制台输出 `Artifact Demo:war exploded: Artifact is deployed successfully`。
+      * *此时后端已在本机 `localhost:8080` 启动，并连接到了虚拟机的数据库。*
+
+-----
+
+#### **第三阶段：启动前端 (Windows - VS Code / 终端)**
+
+1.  **进入目录**：
+      * 打开命令提示符 (CMD) 或 PowerShell，进入前端项目文件夹：
+        ```cmd
+        cd 您的项目路径\web\front
+        ```
+2.  **启动服务**：
+      * 执行命令：
+        ```cmd
+        npm run dev
+        ```
+3.  **访问页面**：
+      * 等待终端显示 `Your application is running here: http://localhost:8081`（端口可能是 8080 或 8081，以提示为准）。
+      * 按住 `Ctrl` 点击链接，或在浏览器输入地址。
+
+-----
+
+#### **第四阶段：开始使用**
+
+1.  **登录验证**：
+      * 输入用户名（如 `JaryWarder`）和密码 `123456`。
+      * 点击登录，如果成功跳转，说明 **前端 -\> 后端 -\> 虚拟机数据库** 全链路畅通。
+2.  **功能测试**：
+      * 进入“我的进度”页面，查看 AI 诊断是否正常。
+      * 进入“背单词”页面，测试提交功能是否正常。
+
+-----
+
+### **⚠️ 常见问题速查**
+
+  * **报错：`Communications link failure`**
+      * **原因**：后端连不上数据库。
+      * **解决**：检查 Ubuntu 开启了吗？Ubuntu 的 IP 是不是变了？防火墙关了吗？
+  * **报错：`Table 'bs_project.wordbooks' doesn't exist`**
+      * **原因**：表名大小写问题。
+      * **解决**：去 Ubuntu 里的 MySQL 执行 `RENAME TABLE WordBooks TO wordbooks;`。
+  * **报错：前端登录无反应**
+      * **原因**：Tomcat 还没启动完。
+      * **解决**：看 IDEA 控制台，直到出现 `deployed successfully` 再操作网页。

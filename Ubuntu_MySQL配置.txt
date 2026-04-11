@@ -1,0 +1,5 @@
+配置项,您的设置值,说明
+Ubuntu IP,192.168.33.128,Windows 连接虚拟机时填写的 Host 地址
+MySQL 端口,3306,默认端口
+Root 用户,用户名: root密码: 123456,仅限 Ubuntu 虚拟机内部（终端）使用，权限最高
+远程用户,用户名: admin密码: 123456,专门给 Windows (IntelliJ IDEA) 连接使用

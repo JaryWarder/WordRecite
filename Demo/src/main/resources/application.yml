@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/bs_project?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password: Wjy231025MySQL
+  
+  mail:
+    host: smtp.sina.com
+    username: springtest123456
+    password: 123456abc
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 25000
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: aLongSecretKeyForJwtAuthenticationInThisProjectThatShouldBeAtLeast256Bits
+  expiration: 86400000 # 24 hours in ms
