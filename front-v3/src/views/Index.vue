@@ -22,6 +22,7 @@
             <el-menu-item index="/plan">制定计划</el-menu-item>
             <el-menu-item index="/start">背单词</el-menu-item>
             <el-menu-item index="/review">复习列表</el-menu-item>
+            <el-menu-item index="/private">生词本</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="3">
             <template #title>挑战</template>

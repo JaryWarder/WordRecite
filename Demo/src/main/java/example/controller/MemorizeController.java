@@ -108,24 +108,28 @@ public class MemorizeController {
 
             List<Daily> yesList = new ArrayList<>();
             List<Daily> noList = new ArrayList<>();
-            drawList(yes, yesList, user);
-            drawList(no, noList, user);
 
             TimeZone timeZone = TimeZone.getTimeZone("Asia/Shanghai");
             Calendar now = Calendar.getInstance(timeZone);
-            String date = now.get(Calendar.YEAR) + "-" + (now.get(Calendar.MONTH) + 1) + "-"
-                    + now.get(Calendar.DAY_OF_MONTH);
+            String reviewDate = String.format(
+                    "%04d-%02d-%02d",
+                    now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH) + 1,
+                    now.get(Calendar.DAY_OF_MONTH));
 
             User u = userMapper.selectById(user);
             if (u == null)
                 return Result.error("User not found");
 
+            String origin = u.getStudying();
+            if (origin == null || origin.isEmpty()) {
+                origin = "none";
+            }
+            drawList(yes, yesList, user, reviewDate, origin);
+            drawList(no, noList, user, reviewDate, origin);
+
             userMapper.updateStudied(user, totalNum);
             String lastTime = u.getMyDate();
-
-            if (lastTime == null || !date.equals(lastTime)) {
-                dailyMapper.deleteByUsername(user);
-            }
 
             // 批量插入 (这里简单遍历插入，实际可优化为 MyBatis-Plus 的 IService.saveBatch)
             for (Daily d : yesList)
@@ -135,7 +139,7 @@ public class MemorizeController {
 
             if (lastTime != null) {
                 String[] date1 = lastTime.split("-");
-                String[] date2 = date.split("-");
+                String[] date2 = reviewDate.split("-");
 
                 if (!date1[0].equals(date2[0])) {
                     userMapper.clearDays(user);
@@ -158,7 +162,7 @@ public class MemorizeController {
                 userMapper.updateDay7(user, totalNum);
             }
 
-            userMapper.updateDate(user, date);
+            userMapper.updateDate(user, reviewDate);
             return Result.success("success");
 
         } catch (RuntimeException e) {
@@ -167,13 +171,15 @@ public class MemorizeController {
         }
     }
 
-    private void drawList(JSONArray arr, List<Daily> list, String fallbackUser) {
+    private void drawList(JSONArray arr, List<Daily> list, String fallbackUser, String reviewDate, String origin) {
         if (arr == null)
             return;
         for (int i = 0; i < arr.size(); i++) {
             JSONObject entry = arr.getJSONObject(i);
             Daily d = new Daily();
             d.setUsername(entry.getString("username") != null ? entry.getString("username") : fallbackUser);
+            d.setReviewDate(reviewDate);
+            d.setOrigin(origin);
             d.setStatus(entry.getString("status"));
             d.setWord(entry.getString("word"));
             d.setId(entry.getIntValue("id"));

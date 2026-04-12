@@ -10,6 +10,8 @@ public class Daily {
     private Integer dailyId; 
     
     private String username;
+    private String reviewDate;
+    private String origin;
     private String status;
     private String word;
     private Integer id; // 原本的单词ID
@@ -28,6 +30,22 @@ public class Daily {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getReviewDate() {
+        return reviewDate;
+    }
+
+    public void setReviewDate(String reviewDate) {
+        this.reviewDate = reviewDate;
+    }
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String origin) {
+        this.origin = origin;
     }
 
     public String getStatus() {

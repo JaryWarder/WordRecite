@@ -29,6 +29,8 @@ public class PrivateTableController {
     public static class MyEntry {
         private String word;
         private String poses;
+        private String origin;
+        private Integer id;
 
         public String getWord() {
             return word;
@@ -44,6 +46,22 @@ public class PrivateTableController {
 
         public void setPoses(String poses) {
             this.poses = poses;
+        }
+
+        public String getOrigin() {
+            return origin;
+        }
+
+        public void setOrigin(String origin) {
+            this.origin = origin;
+        }
+
+        public Integer getId() {
+            return id;
+        }
+
+        public void setId(Integer id) {
+            this.id = id;
         }
     }
 
@@ -65,12 +83,28 @@ public class PrivateTableController {
                 MyEntry e = new MyEntry();
                 e.setWord(w.getWord());
                 e.setPoses(poses);
+                e.setOrigin(w.getOrigin());
+                e.setId(w.getId());
                 result.add(e);
             }
             return Result.success(result);
         } catch (Exception e) {
             log.error("getPrivate error", e);
             return Result.error("Failed to get private books");
+        }
+    }
+
+    @GetMapping("/check_private")
+    public Result<Boolean> checkPrivate(@RequestParam String username, @RequestParam String word) {
+        log.info("checkPrivate, username: {}, word: {}", username, word);
+        try {
+            QueryWrapper<PrivateBooks> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("username", username).eq("word", word);
+            PrivateBooks exist = privateBooksMapper.selectOne(queryWrapper);
+            return Result.success(exist != null);
+        } catch (Exception e) {
+            log.error("checkPrivate error", e);
+            return Result.error("Failed to check private word");
         }
     }
 

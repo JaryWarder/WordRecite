@@ -10,6 +10,41 @@ SET collation_connection = utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS bs_project CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE bs_project;
 
+DROP TABLE IF EXISTS word_book;
+CREATE TABLE word_book (
+    title VARCHAR(20) NOT NULL,
+    num INT NOT NULL,
+    PRIMARY KEY (title)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO word_book (title, num) VALUES
+('TOEFLWordBook', 1300),
+('CET6WordBook', 2083),
+('GREWordBook', 3063);
+
+DROP TABLE IF EXISTS private_books;
+CREATE TABLE private_books (
+    pid INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(20) NOT NULL,
+    origin VARCHAR(50) NOT NULL,
+    id INT NOT NULL,
+    word VARCHAR(100) NOT NULL,
+    UNIQUE KEY uk_private_books (username, origin, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS daily;
+CREATE TABLE daily (
+    daily_id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(20) NOT NULL,
+    review_date DATE NOT NULL,
+    origin VARCHAR(50) NOT NULL,
+    status VARCHAR(4) NOT NULL,
+    word VARCHAR(100) NOT NULL,
+    id INT NOT NULL,
+    UNIQUE KEY uk_daily_user_date_origin_id (username, review_date, origin, id),
+    INDEX idx_daily_user_date (username, review_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 DROP TABLE IF EXISTS user;
 CREATE TABLE user (
     username    VARCHAR(20) NOT NULL,

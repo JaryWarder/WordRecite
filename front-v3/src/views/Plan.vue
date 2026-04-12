@@ -33,7 +33,14 @@
           <p>建议每天学习20-30个单词，保持循序渐进。</p>
         </div>
 
-        <el-button type="primary" @click="submit_plan" :disabled="studying === 'none' || studying === 'Private'" class="save-btn" round>
+        <el-button
+          type="primary"
+          @click="submit_plan"
+          :disabled="studying === 'none' || studying === 'Private'"
+          :loading="saving"
+          class="save-btn"
+          round
+        >
           保存学习计划
         </el-button>
       </div>
@@ -42,16 +49,46 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
+import { submitPlan } from '../api/plan'
+import { useUserStore } from '../stores/user'
 import { getCookie } from '../utils/cookie'
+
+const router = useRouter()
+const userStore = useUserStore()
+const { username } = storeToRefs(userStore)
 
 const numWords = ref(20)
 const studying = ref(getCookie('studying') || 'none')
-const msg = ref(studying.value === 'none' ? '请先选择一本单词书（接口待联调）' : `针对：《${studying.value}》`)
+const saving = ref(false)
 
-function submit_plan () {
-  ElMessage({ message: '保存计划接口待联调', type: 'warning', duration: 1500, offset: 80 })
+const msg = computed(() => (studying.value === 'none' ? '请先选择一本单词书' : `针对：《${studying.value}》`))
+
+async function submit_plan () {
+  if (saving.value) return
+
+  userStore.restore()
+  if (!username.value || username.value === 'Guest') {
+    ElMessage({ message: '请先登录', type: 'warning', duration: 1500, offset: 80 })
+    return
+  }
+
+  saving.value = true
+  try {
+    const result = await submitPlan({ user: username.value, numWords: numWords.value })
+    if (result.code !== 200) {
+      throw new Error(result.msg || '保存学习计划失败')
+    }
+    ElMessage({ message: '学习计划已保存', type: 'success', duration: 1500, offset: 80 })
+    router.push({ path: '/start', query: { num: numWords.value } })
+  } catch (e) {
+    ElMessage({ message: e?.message || '保存学习计划失败', type: 'error', duration: 2000, offset: 80 })
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -125,4 +162,3 @@ function submit_plan () {
   font-size: 16px;
 }
 </style>
-

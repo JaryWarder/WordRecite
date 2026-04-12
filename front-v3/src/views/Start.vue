@@ -11,16 +11,21 @@
       <div class="content">
         <div class="plan-box">
           <div class="plan-title">本次学习目标</div>
-          <div class="plan-number">{{ num }}</div>
+          <div class="plan-number">{{ plan }}</div>
           <div class="plan-unit">词</div>
+        </div>
+
+        <div class="progress-box" v-if="studying !== 'none'">
+          <div class="progress-text">已学 {{ studied }} / {{ plan }}</div>
+          <el-progress :percentage="progressPercentage" :show-text="false" :stroke-width="6" color="#38bdf8" />
         </div>
 
         <div class="tips">
           <i class="el-icon-info"></i>
-          <span>点击开始后进入单词卡片模式（接口待联调时使用模拟数据）。</span>
+          <span>{{ tipsText }}</span>
         </div>
 
-        <el-button type="primary" class="start-btn" :disabled="studying === 'none'" @click="goWordCard">
+        <el-button type="primary" class="start-btn" :loading="loading" :disabled="startDisabled" @click="goWordCard">
           开始学习
         </el-button>
       </div>
@@ -31,20 +36,93 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
+import { startInfo } from '../api/start'
 import ChangeStudying from '../components/small/ChangeStudying.vue'
-import { getCookie } from '../utils/cookie'
+import { useUserStore } from '../stores/user'
+import { getCookie, setCookie } from '../utils/cookie'
 
 const router = useRouter()
-const route = useRoute()
+const userStore = useUserStore()
+const { username } = storeToRefs(userStore)
 
-const studying = computed(() => getCookie('studying') || 'none')
-const num = computed(() => Number(route.query.num || 20))
+const loading = ref(false)
+const studying = ref(getCookie('studying') || 'none')
+const plan = ref(0)
+const studied = ref(0)
+const totalBookNum = ref(0)
+
+const startDisabled = computed(() => studying.value === 'none' || plan.value <= 0 || loading.value)
+
+const progressPercentage = computed(() => {
+  if (plan.value <= 0) return 0
+  const completed = Math.min(Math.max(studied.value, 0), plan.value)
+  return Math.min(Math.round((completed / plan.value) * 100), 100)
+})
+
+const tipsText = computed(() => {
+  if (studying.value === 'none') return '请先选择词书'
+  if (plan.value <= 0) return '请先制定学习计划'
+  return '点击开始后进入单词卡片模式'
+})
+
+async function fetchStartInfo () {
+  userStore.restore()
+  if (!username.value || username.value === 'Guest') return
+
+  const result = await startInfo(username.value)
+  if (result.code !== 200) {
+    throw new Error(result.msg || '获取开始信息失败')
+  }
+
+  const data = result.data || {}
+  if (data.info === 'no_book') {
+    studying.value = 'none'
+    setCookie('studying', 'none', 7)
+    plan.value = 0
+    studied.value = 0
+    totalBookNum.value = 0
+    return
+  }
+
+  const backendStudying = data.studying
+  if (backendStudying) {
+    studying.value = backendStudying
+    setCookie('studying', backendStudying, 7)
+  }
+
+  plan.value = Number(data.plan || 0)
+  studied.value = Number(data.studied || 0)
+  totalBookNum.value = Number(data.num || 0)
+}
 
 function goWordCard () {
-  router.push({ path: '/wordCard', query: { num: num.value } })
+  if (studying.value === 'none') return
+  if (plan.value <= 0) {
+    ElMessage({ message: '请先制定学习计划', type: 'warning', duration: 1500, offset: 80 })
+    router.push('/plan')
+    return
+  }
+  if (totalBookNum.value <= 0) {
+    ElMessage({ message: '词书信息异常，请稍后重试', type: 'error', duration: 2000, offset: 80 })
+    return
+  }
+  router.push({ path: '/wordCard', query: { num: totalBookNum.value, studying: studying.value } })
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await fetchStartInfo()
+  } catch (e) {
+    ElMessage({ message: e?.message || '获取开始信息失败', type: 'error', duration: 2000, offset: 80 })
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>
@@ -106,6 +184,23 @@ function goWordCard () {
   font-size: 13px;
 }
 
+.progress-box {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.progress-text {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .tips {
   display: flex;
   align-items: center;
@@ -122,4 +217,3 @@ function goWordCard () {
   height: 44px;
 }
 </style>
-

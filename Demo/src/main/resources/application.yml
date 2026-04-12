@@ -5,13 +5,13 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/bs_project?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: root
-    password: Wjy231025MySQL
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   
   mail:
     host: smtp.sina.com
-    username: springtest123456
-    password: 123456abc
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     default-encoding: UTF-8
     properties:
       mail:
@@ -29,5 +29,5 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 jwt:
-  secret: aLongSecretKeyForJwtAuthenticationInThisProjectThatShouldBeAtLeast256Bits
+  secret: ${JWT_SECRET}
   expiration: 86400000 # 24 hours in ms

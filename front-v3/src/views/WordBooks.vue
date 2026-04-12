@@ -41,26 +41,84 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import ChangeStudying from '../components/small/ChangeStudying.vue'
+import { getBooks, getCurrentBook } from '../api/books'
+import { changeBook } from '../api/change'
+import { useUserStore } from '../stores/user'
 import { getCookie, setCookie } from '../utils/cookie'
 
 const router = useRouter()
 
-const bookList = computed(() => [
-  { id: 1, title: 'CET-4', num: 2000 },
-  { id: 2, title: 'CET-6', num: 2500 },
-  { id: 3, title: 'TOEFL', num: 3500 }
-])
+const userStore = useUserStore()
+const { username } = storeToRefs(userStore)
 
 const studying = ref(getCookie('studying') || 'none')
+const books = ref([])
+const loading = ref(false)
+const switching = ref(false)
 
-function chooseBook (book) {
-  studying.value = book.title
-  setCookie('studying', book.title, 7)
-  ElMessage({ message: `已选择《${book.title}》（接口待联调）`, type: 'success', duration: 1500, offset: 80 })
+const bookList = computed(() => {
+  const list = Array.isArray(books.value) ? books.value : []
+  return list
+    .map((b, index) => ({
+      id: index + 1,
+      title: b?.title || '',
+      num: b?.num ?? 0
+    }))
+    .filter((b) => Boolean(b.title))
+})
+
+async function fetchBooks () {
+  userStore.restore()
+  if (!username.value || username.value === 'Guest') return
+
+  const result = await getBooks(username.value)
+  if (result.code !== 200) {
+    throw new Error(result.msg || '获取词书列表失败')
+  }
+  books.value = Array.isArray(result.data) ? result.data : []
+}
+
+async function syncCurrentBook () {
+  userStore.restore()
+  if (!username.value || username.value === 'Guest') return
+
+  const result = await getCurrentBook(username.value)
+  if (result.code !== 200) return
+  const title = result.data?.title
+  if (!title) return
+
+  studying.value = title
+  setCookie('studying', title, 7)
+}
+
+async function chooseBook (book) {
+  if (switching.value) return
+
+  userStore.restore()
+  if (!username.value || username.value === 'Guest') {
+    ElMessage({ message: '请先登录', type: 'warning', duration: 1500, offset: 80 })
+    return
+  }
+
+  switching.value = true
+  try {
+    const result = await changeBook({ username: username.value, newTitle: book.title })
+    if (result.code !== 200) {
+      throw new Error(result.msg || '切换词书失败')
+    }
+    studying.value = book.title
+    setCookie('studying', book.title, 7)
+    ElMessage({ message: `已切换为《${book.title}》`, type: 'success', duration: 1500, offset: 80 })
+  } catch (e) {
+    ElMessage({ message: e?.message || '切换词书失败', type: 'error', duration: 2000, offset: 80 })
+  } finally {
+    switching.value = false
+  }
 }
 
 function goPlan () {
@@ -70,6 +128,18 @@ function goPlan () {
 function goStart () {
   router.push({ path: '/start', query: { num: 20 } })
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    await fetchBooks()
+    await syncCurrentBook()
+  } catch (e) {
+    ElMessage({ message: e?.message || '加载失败', type: 'error', duration: 2000, offset: 80 })
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>
