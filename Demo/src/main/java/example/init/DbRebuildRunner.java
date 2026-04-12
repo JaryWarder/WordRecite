@@ -1,6 +1,7 @@
 package example.init;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -60,9 +61,9 @@ public class DbRebuildRunner implements ApplicationRunner {
             ClassPathResource schema = new ClassPathResource("db/compete_init.sql");
             ScriptUtils.executeSqlScript(conn, schema);
 
-            executeIfExists(conn, resolveProjectSql("CET6_new.sql"));
-            executeIfExists(conn, resolveProjectSql("GRE_new.sql"));
-            executeIfExists(conn, resolveProjectSql("TOEFL_new.sql"));
+            executePrefer(conn, resolveProjectSql("CET6_patched_v2.sql"), resolveProjectSql("CET6_new.sql"));
+            executePrefer(conn, resolveProjectSql("GRE_patched_v2.sql"), resolveProjectSql("GRE_new.sql"));
+            executePrefer(conn, resolveProjectSql("TOEFL_patched_v2.sql"), resolveProjectSql("TOEFL_new.sql"));
 
             try (PreparedStatement ps = conn.prepareStatement("SELECT title, num FROM word_book ORDER BY title");
                     ResultSet rs = ps.executeQuery()) {
@@ -81,21 +82,36 @@ public class DbRebuildRunner implements ApplicationRunner {
 
     private static Path resolveProjectSql(String fileName) {
         Path userDir = Paths.get(System.getProperty("user.dir"));
-        Path repoRoot = userDir.getParent();
-        if (repoRoot == null) {
-            return userDir.resolve(fileName);
+        Path direct = userDir.resolve("DB");
+        if (Files.exists(direct)) {
+            return direct.resolve(fileName);
         }
-        return repoRoot.resolve("DB").resolve(fileName);
+        Path parent = userDir.getParent();
+        if (parent != null) {
+            Path parentDb = parent.resolve("DB");
+            if (Files.exists(parentDb)) {
+                return parentDb.resolve(fileName);
+            }
+        }
+        return userDir.resolve(fileName);
     }
 
-    private static void executeIfExists(Connection conn, Path filePath) throws Exception {
+    private static void executePrefer(Connection conn, Path primary, Path fallback) throws Exception {
+        if (executeIfExists(conn, primary)) {
+            return;
+        }
+        executeIfExists(conn, fallback);
+    }
+
+    private static boolean executeIfExists(Connection conn, Path filePath) throws Exception {
         FileSystemResource res = new FileSystemResource(filePath.toFile());
         if (!res.exists()) {
             log.warn("SQL file not found, skip: {}", filePath);
-            return;
+            return false;
         }
         log.warn("Importing SQL: {}", filePath);
         ScriptUtils.executeSqlScript(conn, new EncodedResource(res, StandardCharsets.UTF_8));
+        return true;
     }
 
     private static void logTableCount(Connection conn, String tableName) {

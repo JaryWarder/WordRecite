@@ -8,8 +8,10 @@ import Start from '../views/Start.vue'
 import Review from '../views/Review.vue'
 import Progress from '../views/Progress.vue'
 import TestStart from '../views/TestStart.vue'
+import Test from '../views/Test.vue'
 import WordCard from '../views/WordCard.vue'
 import Private from '../views/Private.vue'
+import DailyFootprint from '../views/DailyFootprint.vue'
 import { useUserStore } from '../stores/user'
 
 const router = createRouter({
@@ -25,9 +27,11 @@ const router = createRouter({
         { path: 'plan', component: Plan, meta: { requireAuth: true } },
         { path: 'start', component: Start, meta: { requireAuth: true } },
         { path: 'review', component: Review, meta: { requireAuth: true } },
+        { path: 'dailyFootprint', component: DailyFootprint, meta: { requireAuth: true } },
         { path: 'private', component: Private, meta: { requireAuth: true } },
         { path: 'progress', component: Progress, meta: { requireAuth: true } },
         { path: 'testStart', component: TestStart, meta: { requireAuth: true } },
+        { path: 'test', component: Test, meta: { requireAuth: true } },
         { path: 'wordCard', component: WordCard, meta: { requireAuth: true } }
       ]
     }

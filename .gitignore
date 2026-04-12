@@ -64,6 +64,8 @@
 api.txt
 .env
 .env.*
+**/application-local.yml
+**/application-local.properties
 
 # =========================
 # IDE 与系统级缓存

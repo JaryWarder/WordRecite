@@ -10,6 +10,7 @@ import example.dao.WordEntryMapper;
 import example.pojo.Daily;
 import example.pojo.User;
 import example.pojo.WordEntry;
+import example.service.UserWordProgressService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,9 @@ public class MemorizeController {
 
     @Autowired
     private DailyMapper dailyMapper;
+
+    @Autowired
+    private UserWordProgressService userWordProgressService;
 
     @GetMapping("/get_server_date")
     public Result<Map<String, String>> getServerDate() {
@@ -128,6 +132,9 @@ public class MemorizeController {
             drawList(yes, yesList, user, reviewDate, origin);
             drawList(no, noList, user, reviewDate, origin);
 
+            recordUserWordProgress(yes, user, origin, true);
+            recordUserWordProgress(no, user, origin, false);
+
             userMapper.updateStudied(user, totalNum);
             String lastTime = u.getMyDate();
 
@@ -184,6 +191,19 @@ public class MemorizeController {
             d.setWord(entry.getString("word"));
             d.setId(entry.getIntValue("id"));
             list.add(d);
+        }
+    }
+
+    private void recordUserWordProgress(JSONArray arr, String fallbackUser, String origin, boolean correct) {
+        if (arr == null) {
+            return;
+        }
+        for (int i = 0; i < arr.size(); i++) {
+            JSONObject entry = arr.getJSONObject(i);
+            String username = entry.getString("username") != null ? entry.getString("username") : fallbackUser;
+            Integer wordId = entry.getInteger("id");
+            String word = entry.getString("word");
+            userWordProgressService.recordLearnResult(username, origin, wordId, word, correct);
         }
     }
 }

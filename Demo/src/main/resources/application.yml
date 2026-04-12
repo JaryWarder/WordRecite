@@ -2,6 +2,8 @@ server:
   port: 8080
 
 spring:
+  config:
+    import: optional:classpath:application-local.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/bs_project?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf-8&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
@@ -29,5 +31,5 @@ mybatis-plus:
     map-underscore-to-camel-case: true
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:PLEASE_SET_JWT_SECRET_AT_LEAST_32_CHARS_LONG_FOR_LOCAL_DEV_ONLY_0123456789}
   expiration: 86400000 # 24 hours in ms

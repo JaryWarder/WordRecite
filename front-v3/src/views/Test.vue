@@ -1,29 +1,20 @@
 <template>
-  <div class="review-wrapper" v-loading.fullscreen.lock="loading">
-    <el-card class="review-card">
+  <div class="test-wrapper" v-loading.fullscreen.lock="loading">
+    <el-card class="test-card">
       <template #header>
         <div class="card-header">
           <div>
-            <h2>每日复习</h2>
+            <h2>单词测试</h2>
             <div class="sub-text">{{ headerSub }}</div>
           </div>
           <div class="header-right">
-            <el-tag type="info" effect="plain">到期 {{ dueCount }}</el-tag>
-            <el-tag type="info" effect="plain">最早 {{ nextReviewAt || '-' }}</el-tag>
-            <el-select v-model="selectedCount" style="width: 110px" @change="reload">
-              <el-option :label="'10 题'" :value="10" />
-              <el-option :label="'20 题'" :value="20" />
-              <el-option :label="'30 题'" :value="30" />
-            </el-select>
+            <el-tag type="info" effect="plain">用时 {{ formatTime(elapsedSec) }}</el-tag>
             <el-tag type="success" effect="plain">得分 {{ score }} / {{ totalCount }}</el-tag>
-            <el-button type="primary" plain :loading="loading" @click="reload">刷新</el-button>
           </div>
         </div>
       </template>
 
-      <el-empty v-if="!loading && questions.length === 0" description="暂无到期复习任务" />
-
-      <div v-else-if="!isFinished && questions.length > 0" class="quiz">
+      <div v-if="!isFinished" class="quiz">
         <div class="progress">
           <div class="progress-text">当前 {{ currentIndex + 1 }} / 共 {{ totalCount }} 题</div>
           <el-progress :percentage="progressPercentage" :stroke-width="8" :show-text="false" color="#38bdf8" />
@@ -68,6 +59,7 @@
           <div class="accuracy">{{ accuracy }}%</div>
           <div class="result-meta">
             <el-tag type="success" effect="plain">总得分 {{ score }} / {{ totalCount }}</el-tag>
+            <el-tag type="info" effect="plain">用时 {{ formatTime(elapsedSec) }}</el-tag>
           </div>
         </div>
 
@@ -93,7 +85,7 @@
         </el-table>
 
         <div class="result-actions">
-          <el-button type="primary" @click="reload">再来一轮</el-button>
+          <el-button type="primary" @click="goBack">返回上一页</el-button>
         </div>
       </div>
     </el-card>
@@ -101,34 +93,33 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { storeToRefs } from 'pinia'
-import { generateReview, getReviewMeta, submitReview } from '../api/review'
-import { getUserInfo } from '../api/user'
-import { useUserStore } from '../stores/user'
-import { setCookie } from '../utils/cookie'
+import { useRoute, useRouter } from 'vue-router'
+import { generateTest, submitTest } from '../api/test'
+import { formatDefinition } from '../utils/definition'
 
-const userStore = useUserStore()
-const { username } = storeToRefs(userStore)
+const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
-const origin = ref('')
-const dueCount = ref(0)
-const nextReviewAt = ref('')
-const selectedCount = ref(20)
 const questions = ref([])
 const currentIndex = ref(0)
 const score = ref(0)
 const locked = ref(false)
 const selectedOption = ref('')
 const isFinished = ref(false)
+const elapsedSec = ref(0)
 const history = ref([])
 const submitted = ref(false)
 
+let timerId = null
+
+const username = computed(() => String(route.query.username || ''))
+const bookTitle = computed(() => String(route.query.bookTitle || ''))
+const totalCount = computed(() => questions.value.length || Number(route.query.count || 0) || 0)
+
 const currentQuestion = computed(() => questions.value[currentIndex.value])
-const totalCount = computed(() => questions.value.length || 0)
-const wrongList = computed(() => history.value.filter((h) => !h.correct))
 
 const progressPercentage = computed(() => {
   const total = totalCount.value
@@ -142,77 +133,21 @@ const accuracy = computed(() => {
   return Math.round((score.value / total) * 100)
 })
 
+const wrongList = computed(() => history.value.filter((h) => !h.correct))
+
 const headerSub = computed(() => {
-  const bt = origin.value ? `词书：${origin.value}` : ''
   const ct = totalCount.value ? `${totalCount.value} 题` : ''
-  return [bt, ct].filter(Boolean).join(' · ') || '复习到期单词'
+  const bt = bookTitle.value ? `词书：${bookTitle.value}` : ''
+  return [bt, ct].filter(Boolean).join(' · ') || '请完成本次测试'
 })
 
 const definitionBlocks = computed(() => formatDefinition(currentQuestion.value?.poses || ''))
 
-function decodeEntities (input) {
-  const s = String(input || '')
-  return s
-    .replace(/&quot;/g, '"')
-    .replace(/&#34;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-}
-
-function extractExamples (line) {
-  const s = String(line || '').trim()
-  if (!s) return { main: '', examples: [] }
-
-  const examples = []
-  const re = /"([^"]+)"/g
-  let m
-  while ((m = re.exec(s)) !== null) {
-    if (m[1] && m[1].trim()) {
-      examples.push(`"${m[1].trim()}"`)
-    }
-  }
-
-  const main = s
-    .replace(/"[^"]*"/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  return { main, examples }
-}
-
-function formatDefinition (raw) {
-  const text = decodeEntities(raw)
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (!text) return []
-
-  const chunks = text
-    .split('**')
-    .map((c) => c.trim())
-    .filter(Boolean)
-
-  const blocks = []
-  const tagRe = /^\{([^}]+)\}\+\+([\s\S]*)$/
-  for (const chunk of chunks) {
-    const m = chunk.match(tagRe)
-    const tag = m ? m[1].trim() : ''
-    const body = (m ? m[2] : chunk).trim()
-
-    const { main, examples } = extractExamples(body)
-    const lines = []
-    if (main) lines.push({ kind: 'text', text: main })
-    if (examples.length) lines.push({ kind: 'example', text: examples.join('  ') })
-
-    blocks.push({ tag, lines })
-  }
-
-  return blocks
+function formatTime (sec) {
+  const s = Math.max(0, Number(sec) || 0)
+  const mm = String(Math.floor(s / 60)).padStart(2, '0')
+  const ss = String(s % 60).padStart(2, '0')
+  return `${mm}:${ss}`
 }
 
 function getOptionType (opt) {
@@ -245,19 +180,22 @@ function choose (opt) {
     if (currentIndex.value + 1 >= questions.value.length) {
       isFinished.value = true
       locked.value = true
+      if (timerId) window.clearInterval(timerId)
       void submitServerHistory()
       return
     }
     currentIndex.value += 1
     locked.value = false
     selectedOption.value = ''
-  }, 800)
+  }, 1200)
 }
 
 async function submitServerHistory () {
   if (submitted.value) return
   submitted.value = true
-  if (!origin.value) return
+
+  const b = bookTitle.value
+  if (!b) return
 
   const posesMap = new Map()
   for (const h of history.value) {
@@ -267,7 +205,7 @@ async function submitServerHistory () {
   }
 
   const payload = {
-    bookTitle: origin.value,
+    bookTitle: b,
     history: history.value.map((h) => ({
       wordId: h?.id,
       chosen: h?.chosen
@@ -275,7 +213,7 @@ async function submitServerHistory () {
   }
 
   try {
-    const result = await submitReview(payload)
+    const result = await submitTest(payload)
     if (result.code !== 200) {
       throw new Error(result.msg || '提交失败')
     }
@@ -303,70 +241,64 @@ async function submitServerHistory () {
   }
 }
 
-async function loadReview () {
-  userStore.restore()
-  if (!username.value || username.value === 'Guest') {
-    questions.value = []
-    dueCount.value = 0
-    nextReviewAt.value = ''
+function goBack () {
+  router.back()
+}
+
+async function loadPaper () {
+  const u = username.value
+  const b = bookTitle.value
+  const c = Number(route.query.count || 0)
+
+  if (!u || !b || !c) {
+    ElMessage({ message: '缺少测试参数，请从测试配置页进入', type: 'warning', duration: 2000, offset: 80 })
+    router.back()
     return
   }
 
-  const userInfo = await getUserInfo(username.value)
-  if (userInfo.code === 200) {
-    const studying = userInfo.data?.studying
-    if (studying) {
-      origin.value = String(studying)
-      setCookie('studying', origin.value, 7)
-    }
-  }
-
-  const meta = await getReviewMeta(origin.value)
-  if (meta.code === 200) {
-    dueCount.value = Number(meta.data?.dueCount || 0)
-    nextReviewAt.value = String(meta.data?.nextReviewAt || '')
-  } else {
-    dueCount.value = 0
-    nextReviewAt.value = ''
-  }
-
-  const result = await generateReview(origin.value, selectedCount.value)
-  if (result.code !== 200) {
-    throw new Error(result.msg || '获取复习题目失败')
-  }
-  const list = Array.isArray(result.data) ? result.data : []
-  questions.value = list
-  currentIndex.value = 0
-  score.value = 0
-  locked.value = false
-  selectedOption.value = ''
-  isFinished.value = false
-  history.value = []
-  submitted.value = false
-}
-
-async function reload () {
   loading.value = true
   try {
-    await loadReview()
+    const result = await generateTest(u, b, c)
+    if (result.code !== 200) {
+      throw new Error(result.msg || '生成试卷失败')
+    }
+    const list = Array.isArray(result.data) ? result.data : []
+    questions.value = list
+    currentIndex.value = 0
+    score.value = 0
+    locked.value = false
+    selectedOption.value = ''
+    isFinished.value = false
+    history.value = []
+
+    elapsedSec.value = 0
+    if (timerId) window.clearInterval(timerId)
+    timerId = window.setInterval(() => {
+      elapsedSec.value += 1
+    }, 1000)
   } catch (e) {
-    ElMessage({ message: e?.message || '获取复习题目失败', type: 'error', duration: 2000, offset: 80 })
+    ElMessage({ message: e?.message || '生成试卷失败', type: 'error', duration: 2000, offset: 80 })
+    router.back()
   } finally {
     loading.value = false
   }
 }
 
 onMounted(async () => {
-  await reload()
+  await loadPaper()
+})
+
+onBeforeUnmount(() => {
+  if (timerId) window.clearInterval(timerId)
 })
 </script>
 
 <style scoped>
-.review-wrapper {
+.test-wrapper {
   padding: 20px;
 }
 
-.review-card {
+.test-card {
   min-height: 560px;
   border-radius: 20px;
 }

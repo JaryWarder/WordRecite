@@ -6,6 +6,62 @@
 </template>
 
 <script setup>
+import { onMounted, watch } from 'vue'
+import { ElMessageBox } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { getPendingCount } from './api/review'
+import { useUserStore } from './stores/user'
+
+const router = useRouter()
+const userStore = useUserStore()
+let lastLoginUsername = ''
+
+async function checkReviewPendingOnce () {
+  userStore.restore()
+  if (!userStore.isLogin) return
+  const key = `review_pending_prompted:${userStore.username || ''}`
+  if (sessionStorage.getItem(key)) return
+
+  try {
+    const resp = await getPendingCount()
+    const count = Number(resp?.data?.count || 0)
+    if (resp?.code !== 200 || count <= 0) return
+
+    sessionStorage.setItem(key, '1')
+    await ElMessageBox.confirm(
+      `根据艾宾浩斯记忆曲线，您当前有 ${count} 个单词需要复习啦！`,
+      '复习提醒',
+      {
+        confirmButtonText: '立即去复习',
+        cancelButtonText: '稍后',
+        type: 'warning',
+        closeOnClickModal: false,
+        closeOnPressEscape: true
+      }
+    )
+    router.push('/review')
+  } catch (e) {
+  }
+}
+
+watch(
+  () => userStore.isLogin,
+  (isLogin) => {
+    if (!isLogin) {
+      if (lastLoginUsername) {
+        sessionStorage.removeItem(`review_pending_prompted:${lastLoginUsername}`)
+      }
+      lastLoginUsername = ''
+      return
+    }
+    lastLoginUsername = userStore.username || ''
+    void checkReviewPendingOnce()
+  }
+)
+
+onMounted(() => {
+  void checkReviewPendingOnce()
+})
 </script>
 
 <style>
