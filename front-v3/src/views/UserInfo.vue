@@ -38,8 +38,12 @@
             <div class="stat-value">{{ studiedValue }}</div>
           </div>
           <div class="stat">
-            <div class="stat-label">已完成</div>
-            <div class="stat-value">{{ finishedValue }}</div>
+            <div class="stat-label">已掌握</div>
+            <div class="stat-value">{{ masteredValue }}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">待复习</div>
+            <div class="stat-value">{{ dueValue }}</div>
           </div>
         </div>
 
@@ -84,6 +88,7 @@ import { loginRequest } from '../api/auth'
 import { useUserStore } from '../stores/user'
 import { getUserInfo, updatePassword } from '../api/user'
 import { encryptPasswordToHex } from '../utils/rsa'
+import { getDashboardData } from '../api/progress'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -97,7 +102,8 @@ const user = reactive({
   plan: null,
   studying: '',
   studied: null,
-  finished: null
+  mastered: null,
+  due: null
 })
 
 const studyingBookNum = ref(0)
@@ -107,7 +113,8 @@ const avatarText = computed(() => String(displayName.value || 'G').slice(0, 1).t
 const studyingTitle = computed(() => user.studying || 'none')
 const planValue = computed(() => Number(user.plan || 0))
 const studiedValue = computed(() => Number(user.studied || 0))
-const finishedValue = computed(() => Number(user.finished || 0))
+const masteredValue = computed(() => Number(user.mastered || 0))
+const dueValue = computed(() => Number(user.due || 0))
 
 const progressPercentage = computed(() => {
   const total = Number(studyingBookNum.value || 0)
@@ -163,10 +170,25 @@ async function fetchUserInfo () {
   const data = result.data || {}
   user.username = data.username || ''
   user.email = data.email || ''
-  user.plan = data.plan ?? null
   user.studying = data.studying || ''
-  user.studied = data.studied ?? null
-  user.finished = data.finished ?? null
+}
+
+async function fetchDashboard () {
+  if (!user.studying || user.studying === 'none') {
+    return
+  }
+  try {
+    const res = await getDashboardData(user.studying)
+    if (res.code === 200 && res.data) {
+      const d = res.data
+      user.plan = d.bookSize ?? 0
+      user.studied = d.learnedUnique ?? 0
+      user.mastered = d.masteredCount ?? 0
+      user.due = d.dueCount ?? 0
+    }
+  } catch (err) {
+    console.error('Failed to fetch dashboard data', err)
+  }
 }
 
 async function fetchStudyingBook () {
@@ -187,6 +209,7 @@ async function reload () {
   reloading.value = true
   try {
     await Promise.all([fetchUserInfo(), fetchStudyingBook()])
+    await fetchDashboard()
     ElMessage({ message: '已刷新', type: 'success', duration: 1000, offset: 80 })
   } catch (e) {
     ElMessage({ message: e?.message || '获取用户信息失败', type: 'error', duration: 2000, offset: 80 })
@@ -248,6 +271,7 @@ onMounted(async () => {
   loading.value = true
   try {
     await Promise.all([fetchUserInfo(), fetchStudyingBook()])
+    await fetchDashboard()
   } catch (e) {
     ElMessage({ message: e?.message || '获取用户信息失败', type: 'error', duration: 2000, offset: 80 })
   } finally {

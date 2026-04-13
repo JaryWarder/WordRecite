@@ -1,0 +1,4 @@
+cd "C:\Users\dj\Desktop\数据库\数据库用期末项目终版\Demo" 
+mvn clean spring-boot:run
+cd "C:\Users\dj\Desktop\数据库\数据库用期末项目终版\front-v3"
+npm run dev
