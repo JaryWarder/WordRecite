@@ -10,22 +10,34 @@
         </div>
       </template>
 
-      <div class="picker">
-        <el-date-picker
-          v-model="selectedDate"
-          type="date"
-          value-format="YYYY-MM-DD"
-          format="YYYY-MM-DD"
-          :clearable="false"
-          size="large"
-          @change="fetchDaily"
-        />
-      </div>
-
-      <div class="meta">
-        <el-tag type="info" effect="plain">{{ selectedDate }}</el-tag>
-        <el-tag type="success" effect="plain">{{ items.length }} 词</el-tag>
-        <el-button plain type="primary" size="small" :loading="loading" @click="fetchDaily">刷新</el-button>
+      <div class="toolbar-row">
+        <div class="picker-container">
+          <el-date-picker
+            v-model="selectedDate"
+            type="date"
+            value-format="YYYY-MM-DD"
+            format="YYYY-MM-DD"
+            :clearable="false"
+            size="default"
+            class="custom-date-picker"
+            @change="fetchDaily"
+          />
+        </div>
+        
+        <div class="side-actions">
+          <el-tag type="success" effect="plain" class="action-item stat-tag">
+            {{ items.length }} 词
+          </el-tag>
+          <el-button 
+            type="primary" 
+            plain 
+            class="action-item refresh-btn"
+            :loading="loading" 
+            @click="fetchDaily"
+          >
+            刷新
+          </el-button>
+        </div>
       </div>
 
       <el-empty v-if="!loading && items.length === 0" description="这一天没有学习记录" />
@@ -35,16 +47,13 @@
           <div class="item-head">
             <div class="word">{{ it.word }}</div>
             <div class="tags">
-              <el-tag size="small" effect="plain" type="info">{{ it.origin }}</el-tag>
+              <el-tag size="small" class="origin-tag">{{ it.origin }}</el-tag>
               <el-tag v-if="it.status === 'yes'" size="small" effect="plain" type="success">
-                <i class="el-icon-check"></i>
-                已掌握
+                <i class="el-icon-check"></i> 已掌握
               </el-tag>
               <el-tag v-else-if="it.status === 'no'" size="small" effect="plain" type="danger">
-                <i class="el-icon-close"></i>
-                需加强
+                <i class="el-icon-close"></i> 需加强
               </el-tag>
-              <el-tag v-else size="small" effect="plain" type="info">{{ it.status || '-' }}</el-tag>
             </div>
           </div>
 
@@ -85,12 +94,10 @@ const selectedDate = ref(formatDate(new Date()))
 const items = ref([])
 
 const parsedItems = computed(() => {
-  return items.value.map((it) => {
-    return {
-      ...it,
-      blocks: formatDefinition(it?.poses || '')
-    }
-  })
+  return items.value.map((it) => ({
+    ...it,
+    blocks: formatDefinition(it?.poses || '')
+  }))
 })
 
 function formatDate (d) {
@@ -108,9 +115,7 @@ async function fetchDaily () {
   loading.value = true
   try {
     const resp = await getDailyList(selectedDate.value)
-    if (resp.code !== 200) {
-      throw new Error(resp.msg || '获取每日足迹失败')
-    }
+    if (resp.code !== 200) throw new Error(resp.msg || '获取每日足迹失败')
     items.value = Array.isArray(resp.data) ? resp.data : []
   } catch (e) {
     ElMessage({ message: e?.message || '获取每日足迹失败', type: 'error', duration: 2000, offset: 80 })
@@ -125,125 +130,88 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page {
-  padding: 20px;
-}
+.page { padding: 20px; }
+.card { border-radius: 24px; background: var(--glass-bg) !important; border: 1px solid var(--glass-border) !important; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+.title { font-size: 22px; font-weight: 800; color: var(--text-main); }
+.sub { margin-top: 4px; color: var(--text-muted); font-size: 13px; }
 
-.card {
-  border-radius: 20px;
-}
-
-.header {
+.toolbar-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-}
-
-.title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.sub {
-  margin-top: 4px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.picker {
-  display: flex;
-  justify-content: center;
-  margin: 6px 0 14px;
-}
-
-.meta {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.item {
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.item-head {
-  display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
+  max-width: 900px;
+  margin: 0 auto 30px;
+  padding: 0 10px;
 }
+
+.picker-container { flex-shrink: 0; }
+.side-actions { display: flex; align-items: center; gap: 12px; }
+
+.action-item {
+  height: 34px !important;
+  line-height: 32px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px !important;
+  font-weight: 600;
+  border-radius: 8px !important;
+}
+
+.stat-tag {
+  font-size: 13px;
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.origin-tag {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: var(--accent-color) !important;
+  font-weight: 700;
+  padding: 0 10px;
+}
+
+.list { display: flex; flex-direction: column; gap: 16px; }
+.item { border-radius: 18px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); transition: all 0.3s ease; }
+.item:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(56, 189, 248, 0.2); }
+.item-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 
 .word {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
-  letter-spacing: 0.2px;
-  color: var(--text-main);
+  color: var(--accent-color);
+  letter-spacing: 0.5px;
 }
 
-.tags {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
+.tags { display: flex; gap: 8px; }
+.def-body { display: flex; flex-direction: column; gap: 10px; }
 
-.def {
-  padding-top: 6px;
-}
-
-.def-empty {
-  color: var(--text-muted);
-}
-
-.def-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* --- 修复点：词性和释义紧凑排版 --- */
 .def-block {
   display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: auto 1fr; /* 宽度随内容自适应，不再固定 */
+  gap: 12px; /* 词性与中文之间的间距 */
 }
 
 .def-tag {
   font-size: 14px;
   font-weight: 800;
   color: var(--accent-color);
-}
-
-.def-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  opacity: 0.8;
+  min-width: 32px; /* 保证基本的对齐视觉感 */
 }
 
 .def-line {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--text-main);
-  word-break: break-word;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .def-line.example {
   font-size: 14px;
   color: var(--text-muted);
+  font-style: italic;
 }
 </style>
-

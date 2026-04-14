@@ -20,7 +20,13 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(jwtAuthInterceptor)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/user/login_request", "/api/user/login_check", "/api/user/submit_signup");
+                .excludePathPatterns(
+                        "/api/user/login_request",
+                        "/api/user/login_check",
+                        "/api/user/submit_signup",
+                        "/api/user/reset_password",
+                        "/api/email/**"
+                );
     }
 
     @Override

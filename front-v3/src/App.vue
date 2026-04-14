@@ -116,8 +116,9 @@ body {
 .el-input__wrapper {
   border: 1px solid var(--glass-border) !important;
   background: var(--glass-bg) !important;
+  /* 【已修复】带有前缀的属性放在前面，标准属性放在后面 */
+  -webkit-backdrop-filter: blur(12px) !important; 
   backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   color: var(--text-main) !important;
   box-shadow: var(--glass-shadow) !important;
 }

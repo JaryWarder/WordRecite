@@ -11,7 +11,8 @@ spring:
     password: ${DB_PASSWORD}
   
   mail:
-    host: smtp.sina.com
+    host: smtp.qq.com
+    port: 465 # 💡 显式指定 465 端口
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     default-encoding: UTF-8
@@ -20,6 +21,12 @@ spring:
         smtp:
           auth: true
           timeout: 25000
+          ssl:
+            enable: true # 💡 必须开启 SSL
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
+            port: 465
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -33,3 +40,7 @@ mybatis-plus:
 jwt:
   secret: ${JWT_SECRET:PLEASE_SET_JWT_SECRET_AT_LEAST_32_CHARS_LONG_FOR_LOCAL_DEV_ONLY_0123456789}
   expiration: 86400000 # 24 hours in ms
+
+ai:
+  api-key: ${API_KEY}
+  api-url: ${API_URL}

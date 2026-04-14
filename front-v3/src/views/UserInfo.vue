@@ -141,7 +141,19 @@ const pwdForm = reactive({
 
 const pwdRules = {
   oldPassword: [{ required: true, message: '请输入旧密码', trigger: 'blur' }],
-  newPassword: [{ required: true, message: '请输入新密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value && value === pwdForm.oldPassword) {
+          callback(new Error('新密码不能与旧密码相同'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     {

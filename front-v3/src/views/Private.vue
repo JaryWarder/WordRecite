@@ -1,27 +1,59 @@
 <template>
   <div class="private-wrapper">
-    <el-card class="private-card">
+    <el-card class="private-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <div>
-            <h2>生词本</h2>
-            <div class="sub-text">你收藏的单词会显示在这里</div>
+          <div class="header-left">
+            <i class="el-icon-collection-tag header-icon"></i>
+            <div>
+              <h2>生词本</h2>
+              <div class="sub-text">你收藏的单词会显示在这里</div>
+            </div>
           </div>
-          <el-button type="primary" plain :loading="loading" @click="reload">刷新</el-button>
+          <el-button 
+            type="primary" 
+            plain 
+            class="refresh-btn" 
+            :loading="loading" 
+            @click="reload"
+          >
+            <i class="el-icon-refresh"></i> 刷新
+          </el-button>
         </div>
       </template>
 
       <el-skeleton v-if="loading" :rows="8" animated />
 
       <div v-else>
-        <el-empty v-if="rows.length === 0" description="生词本为空" />
+        <el-empty v-if="rows.length === 0" description="生词本为空" :image-size="100" />
 
-        <el-table v-else :data="rows" stripe class="private-table">
-          <el-table-column prop="word" label="单词" min-width="120" />
-          <el-table-column prop="poses" label="释义" min-width="220" />
-          <el-table-column label="操作" width="140">
+        <el-table 
+          v-else 
+          :data="rows" 
+          class="private-table"
+          :header-cell-style="{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-main)' }"
+        >
+          <el-table-column prop="word" label="单词" min-width="140">
             <template #default="{ row }">
-              <el-button type="danger" plain size="small" :loading="deletingWord === row.word" @click="remove(row)">
+              <span class="word-text">{{ row.word }}</span>
+            </template>
+          </el-table-column>
+          
+          <el-table-column prop="poses" label="释义" min-width="300">
+            <template #default="{ row }">
+              <div class="poses-text">{{ row.poses }}</div>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="120" align="center">
+            <template #default="{ row }">
+              <el-button 
+                type="danger" 
+                link
+                class="remove-link"
+                :loading="deletingWord === row.word" 
+                @click="remove(row)"
+              >
                 移除
               </el-button>
             </template>
@@ -81,7 +113,8 @@ async function remove (row) {
     await ElMessageBox.confirm(`确认移除「${row.word}」吗？`, '提示', {
       confirmButtonText: '移除',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
+      customClass: 'glass-message-box'
     })
   } catch {
     return
@@ -110,23 +143,41 @@ onMounted(async () => {
 <style scoped>
 .private-wrapper {
   padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .private-card {
+  width: 100%;
+  max-width: 1000px;
   min-height: 520px;
-  border-radius: 20px;
+  border-radius: 24px;
+  /* 已经在 App.vue 定义了全局毛玻璃，这里确保应用 */
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 14px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  font-size: 24px;
+  color: var(--accent-color);
 }
 
 .card-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 800;
   color: var(--text-main);
 }
 
@@ -136,7 +187,56 @@ onMounted(async () => {
   font-size: 13px;
 }
 
+.refresh-btn {
+  border-radius: 10px;
+}
+
+/* 表格毛玻璃化核心 CSS */
 .private-table {
   width: 100%;
+  background-color: transparent !important;
+  --el-table-bg-color: transparent !important;
+  --el-table-tr-bg-color: transparent !important;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.05) !important;
+  --el-table-border-color: var(--glass-border);
+  --el-table-text-color: var(--text-main);
+  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:deep(.el-table__inner-wrapper::before) {
+  display: none; /* 去掉表格底部白线 */
+}
+
+.word-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.poses-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-main);
+  opacity: 0.9;
+}
+
+.remove-link {
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.remove-link:hover {
+  filter: brightness(1.2);
+  text-decoration: underline;
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+  .private-card {
+    border-radius: 16px;
+  }
+  .word-text {
+    font-size: 16px;
+  }
 }
 </style>

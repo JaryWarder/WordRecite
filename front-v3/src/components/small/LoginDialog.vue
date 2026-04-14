@@ -29,6 +29,7 @@
       </template>
     </el-dialog>
   </div>
+  <ResetPasswordDialog v-model="resetDialogVisible" />
 </template>
 
 <script setup>
@@ -37,7 +38,8 @@ import { ElMessage } from 'element-plus'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '../../stores/user'
 import { encryptPasswordToHex } from '../../utils/rsa'
-import { loginCheck, loginRequest, sendEmail } from '../../api/auth'
+import { loginCheck, loginRequest } from '../../api/auth'
+import ResetPasswordDialog from './ResetPasswordDialog.vue'
 
 const emit = defineEmits(['login_success'])
 
@@ -47,6 +49,7 @@ const { isLogin } = storeToRefs(userStore)
 const dialogFormVisible = ref(false)
 const loginLoading = ref(false)
 const loginFormRef = ref()
+const resetDialogVisible = ref(false)
 
 const form = reactive({
   username: '',
@@ -81,21 +84,8 @@ function buttonClicked () {
 }
 
 async function onSendEmail () {
-  if (!form.username) {
-    ElMessage({ message: '请先输入用户名', type: 'warning', duration: 2000, offset: 80 })
-    return
-  }
-  try {
-    const result = await sendEmail(form.username)
-    if (result.code === 200) {
-      ElMessage({ message: '邮件已处理（如配置邮箱则会发送），密码已重置为123456', type: 'success', duration: 3000, offset: 80 })
-      dialogFormVisible.value = false
-    } else {
-      ElMessage({ message: result.msg || '发送失败', type: 'error', duration: 2000, offset: 80 })
-    }
-  } catch (e) {
-    ElMessage({ message: '邮件发送失败', type: 'error', duration: 2000, offset: 80 })
-  }
+  resetDialogVisible.value = true
+  dialogFormVisible.value = false
 }
 
 async function submit () {

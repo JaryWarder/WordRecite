@@ -19,3 +19,8 @@ export async function submitSignup (obj) {
   const resp = await http.get('/api/user/submit_signup', { params: { obj: JSON.stringify(obj) } })
   return resp.data
 }
+
+export async function resetPassword ({ username, code, newEncrypted }) {
+  const resp = await http.post('/api/user/reset_password', { username, code, newEncrypted })
+  return resp.data
+}
