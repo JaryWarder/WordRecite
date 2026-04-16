@@ -1,0 +1,68 @@
+services:
+
+  # ── MySQL 数据库 ─────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: wordrecite-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: bs_project
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 挂载初始化脚本目录，容器首次启动时按文件名顺序执行
+      - ./DB:/sql-scripts:ro
+      - ./DB/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    networks:
+      - app-net
+
+  # ── Spring Boot 后端 ─────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./Demo
+      dockerfile: Dockerfile
+    container_name: wordrecite-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      API_KEY: ${API_KEY}
+      API_URL: ${API_URL}
+    networks:
+      - app-net
+
+  # ── Vue3 前端（Nginx）────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./front-v3
+      dockerfile: Dockerfile
+    container_name: wordrecite-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  mysql_data:
+
+networks:
+  app-net:
+    driver: bridge
