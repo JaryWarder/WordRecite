@@ -91,3 +91,5 @@ Desktop.ini
 .trae/
 
 node_modules/
+
+.env
