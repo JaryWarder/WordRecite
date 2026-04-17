@@ -102,9 +102,9 @@ function usernameCheck (rule, value, callback) {
 
 function phoneCheck (rule, value, callback) {
   if (value === '') return callback(new Error('请输入手机号码'))
-  const phoneRE = /^[1][34578][0-9]{9}$/
+  const phoneRE = /^1[3-9]\d{9}$/
   if (phoneRE.test(value)) return callback()
-  return callback(new Error('手机号码格式错误'))
+  return callback(new Error('手机号码格式错误：请输入1开头的11位有效手机号'))
 }
 
 const signupRules = {

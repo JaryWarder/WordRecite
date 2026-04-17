@@ -1,0 +1,16 @@
+[33m2808960[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m pom.xml更新
+[33mdd86d0f[m 数据库读取优化
+[33m4ae9cdb[m docker完善&错误修改
+[33m24019bc[m Merge branch 'main' of https://github.com/JaryWarder/WordRecite
+[33m5d8f068[m docker部署适应
+[33mfe64160[m Delete 项目运行.txt
+[33ma3e6a29[m README文件制作
+[33m19cda72[m 更新邮件功能
+[33m1f50a29[m feat: 完成进度分析数据大屏开发，完善 gitignore 配置
+[33m99c7611[m 功能常规更新
+[33m2e10a78[m Update front-v3 API integration and sanitize backend config
+[33m8fd88f7[m Delete 数据库部署有关信息.txt
+[33m90be06b[m Delete 数据库部署与配置方案说明书.pdf
+[33m80c8bab[m Delete 数据库部署与配置方案说明书.docx
+[33md9a231c[m Delete Ubuntu_MySQL配置.txt
+[33m5e0420f[m Init WordRecite project with strict gitignore and masked API keys
