@@ -1,18 +1,15 @@
-# Stage 1: 构建 JAR
-FROM maven:3.9-eclipse-temurin-17 AS builder
-WORKDIR /app
-
-# 先复制 pom.xml 单独下载依赖，利用 Docker 层缓存
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
-
-# 再复制源码并构建
-COPY src ./src
-RUN mvn clean package -DskipTests -q
-
-# Stage 2: 运行时镜像（精简版）
+# 直接使用轻量级的 JRE 运行时
 FROM eclipse-temurin:17-jre-alpine
+
 WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+
+# 将本地已经打包好的 JAR 文件复制进去
+# 注意：这里路径要匹配你本地 mvn package 生成的文件名
+COPY target/*.jar app.jar
+
+# 优化 Java 启动参数，限制内存占用（针对小内存服务器）
+ENV JAVA_OPTS="-Xmx512m -Xms256m"
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
